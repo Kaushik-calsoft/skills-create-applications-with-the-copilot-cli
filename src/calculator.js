@@ -1,6 +1,6 @@
-#!/usr/bin/env node
 
-// Supported operations: addition (+), subtraction (-), multiplication (*), and division (/).
+// Supported operations: addition (+), subtraction (-), multiplication (*), division (/),
+// modulo (%), exponentiation (^), and square root (sqrt).
 function add(left, right) {
   return left + right;
 }
@@ -20,44 +20,74 @@ function divide(left, right) {
   return left / right;
 }
 
+function modulo(a, b) {
+  if (b === 0) {
+    throw new RangeError("Modulo by zero is not allowed.");
+  }
+  return a % b;
+}
+
+function power(base, exponent) {
+  return base ** exponent;
+}
+
+function squareRoot(n) {
+  if (n < 0) {
+    throw new RangeError("Square root of a negative number is not allowed.");
+  }
+  return Math.sqrt(n);
+}
+
 const operations = {
   "+": add,
   "-": subtract,
   "*": multiply,
   "/": divide,
+  "%": modulo,
+  "^": power,
+  sqrt: squareRoot,
 };
 
-function calculate(operator, left, right) {
+function calculate(operator, ...operands) {
   const operation = operations[operator];
   if (!operation) {
     throw new TypeError(`Unsupported operation: ${operator}`);
   }
-  if (!Number.isFinite(left) || !Number.isFinite(right)) {
+  const isUnary = operator === "sqrt";
+  const expectedOperands = isUnary ? 1 : 2;
+  if (operands.length !== expectedOperands) {
+    const expected = isUnary ? "one operand" : "two operands";
+    throw new TypeError(`${operator} expects ${expected}.`);
+  }
+  const [left, right] = operands;
+  if (!Number.isFinite(left) || (!isUnary && !Number.isFinite(right))) {
     throw new TypeError("Both operands must be valid finite numbers.");
   }
-  return operation(left, right);
+  return isUnary ? operation(left) : operation(left, right);
 }
 
 function printUsage() {
-  console.error("Usage: node src/calculator.js <+|-|*|/> <number> <number>");
+  console.error("Usage: node src/calculator.js <+|-|*|/|%|^> <number> <number>");
+  console.error("       node src/calculator.js sqrt <number>");
 }
 
 function main(args) {
-  if (args.length !== 3) {
+  const [operator, ...inputs] = args;
+  const expectedOperands = operator === "sqrt" ? 1 : 2;
+  if (inputs.length !== expectedOperands) {
     printUsage();
     process.exitCode = 1;
     return;
   }
 
-  const [operator, leftInput, rightInput] = args;
-  if (leftInput.trim() === "" || rightInput.trim() === "") {
+  if (inputs.some((input) => input.trim() === "")) {
     console.error("Both operands must be valid finite numbers.");
     process.exitCode = 1;
     return;
   }
 
   try {
-    console.log(calculate(operator, Number(leftInput), Number(rightInput)));
+    console.log(calculate(operator, ...inputs.map(Number)));
   } catch (error) {
     if (error instanceof TypeError || error instanceof RangeError) {
       console.error(error.message);
@@ -75,4 +105,13 @@ if (require.main === module) {
   main(process.argv.slice(2));
 }
 
-module.exports = { add, subtract, multiply, divide, calculate };
+module.exports = {
+  add,
+  subtract,
+  multiply,
+  divide,
+  modulo,
+  power,
+  squareRoot,
+  calculate,
+};
